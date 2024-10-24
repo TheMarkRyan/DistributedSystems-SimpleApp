@@ -70,6 +70,31 @@ export class SimpleAppStack extends cdk.Stack {
         allowedOrigins: ["*"],
       },
     });
+    const getAllMoviesFn = new lambdanode.NodejsFunction(this, "GetAllMoviesFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: `${__dirname}/../lambdas/getAllMovies.ts`, //new lambda function to get all movies in table
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: moviesTable.tableName,  // Pass the table name via environment variable
+        REGION: 'eu-west-1',
+      },
+    });
+    
+    const getAllMoviesURL = getAllMoviesFn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,  
+      cors: {
+        allowedOrigins: ["*"],  
+      },
+    });
+    
+   //Allows permissions for Lambda function
+    moviesTable.grantReadData(getAllMoviesFn);
+    
+    // Output the function URL for test
+    new cdk.CfnOutput(this, "Get All Movies Function Url", { value: getAllMoviesURL.url });
+    
 
     moviesTable.grantReadData(getMovieByIdFn)
 
